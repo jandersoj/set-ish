@@ -414,15 +414,19 @@
                 (card) => !selectedCards.includes(card.id)
               );
 
-              // Deal 3 new cards from deck
-              if (deck.length > 0) {
-                const cardsToAdd = deck.slice(0, 3);
-                const newDeck = deck.slice(3);
-                setBoard([...newBoard, ...cardsToAdd]);
-                setDeck(newDeck);
-              } else {
-                setBoard(newBoard);
+              // Deal cards only if board has fewer than 12
+              let updatedBoard = newBoard;
+              let updatedDeck = deck;
+
+              if (newBoard.length < 12 && deck.length > 0) {
+                const cardsNeeded = 12 - newBoard.length;
+                const cardsToAdd = deck.slice(0, cardsNeeded);
+                updatedBoard = [...newBoard, ...cardsToAdd];
+                updatedDeck = deck.slice(cardsNeeded);
               }
+
+              setBoard(updatedBoard);
+              setDeck(updatedDeck);
 
               // Update score and clear selection
               setFoundSets(foundSets + 1);

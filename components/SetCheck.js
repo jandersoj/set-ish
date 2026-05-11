@@ -11,7 +11,7 @@ export default function SetCheck({ message, visible }) {
         fontSize: '1.5rem',
         fontWeight: 'bold',
         color: isValid ? '#005523' : '#a52a1c',
-        animation: 'fadeInOut 2s ease-in-out',
+        animation: 'fadeInOut 1s ease-in-out',
       }}
     >
       {message}
