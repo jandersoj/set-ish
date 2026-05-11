@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SET Game</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      width: 100%;
+      overflow-x: hidden;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #8c7cb4;
+      color: #463086;
+      min-height: 100vh;
+      width: 100%;
+      overflow-x: hidden;
+    }
+
+    /* ===== RESPONSIVE LAYOUT ===== */
+
+    .main-container {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 2rem;
+      padding: 2rem;
+      width: 100%;
+      overflow-x: hidden;
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      align-items: flex-start;
+      justify-content: flex-start;
+      width: 280px;
+      height: 100%;
+      flex-shrink: 0;
+    }
+
+    .board-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      flex-shrink: 0;
+    }
+
+    /* ===== CARD STYLING ===== */
+
+    .card {
+      width: 245px;
+      height: 175px;
+      border-radius: 8px;
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      background-color: white;
+      transition: all 0.2s ease;
+      font-size: 3rem;
+      flex-shrink: 0;
+    }
+
+    /* ===== BOARD STYLING ===== */
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      padding: 2rem;
+      border-radius: 12px;
+      max-width: fit-content;
+    }
+
+    /* ===== TABLET (max 1024px) ===== */
+    @media (max-width: 1024px) {
+      .main-container {
+        gap: 1.5rem;
+        padding: 1.5rem;
+      }
+
+      .sidebar {
+        width: 220px;
+        gap: 1.5rem;
+      }
+
+      .card {
+        width: 200px;
+        height: 150px;
+        font-size: 2.5rem;
+      }
+
+      .board {
+        gap: 0.75rem;
+        padding: 1.5rem;
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+
+    /* ===== MOBILE (max 768px) ===== */
+    @media (max-width: 768px) {
+      .main-container {
+        flex-direction: column;
+        gap: 1.5rem;
+        padding: 1rem;
+        align-items: center;
+      }
+
+      .sidebar {
+        width: 100%;
+        max-width: 300px;
+        gap: 1.5rem;
+      }
+
+      .card {
+        width: 180px;
+        height: 140px;
+        font-size: 2.2rem;
+        padding: 10px;
+      }
+
+      .board {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.75rem;
+        padding: 1.5rem;
+      }
+    }
+
+    /* ===== SMALL MOBILE (max 520px) ===== */
+    @media (max-width: 520px) {
+      .main-container {
+        gap: 1rem;
+        padding: 0.75rem;
+      }
+
+      .sidebar {
+        max-width: 280px;
+        gap: 1rem;
+      }
+
+      .card {
+        width: 130px;
+        height: 100px;
+        font-size: 1.6rem;
+        padding: 8px;
+      }
+
+      .board {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
+        padding: 1rem;
+      }
+    }
+
+    /* ===== EXTRA SMALL (max 380px) ===== */
+    @media (max-width: 380px) {
+      .card {
+        width: 100px;
+        height: 80px;
+        font-size: 1.3rem;
+        padding: 6px;
+      }
+
+      .board {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+        padding: 0.75rem;
+      }
+    }
+
+    @keyframes fadeInOut {
+      0% { opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+
+    .message-box {
+      animation: fadeInOut 3s ease-in-out;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // ===== CARD COMPONENT =====
+    function Card({ card, isSelected, onClick }) {
+      const shapeSymbols = {
+        diamond: '◆',
+        squiggle: '≈',
+        oval: '●',
+      };
+
+      const colorStyles = {
+        red: '#e74c3c',
+        green: '#2ecc71',
+        purple: '#9b59b6',
+      };
+
+      const symbol = shapeSymbols[card.shape];
+      const color = colorStyles[card.color];
+
+      // Create the display (3 symbols if number is 3, etc)
+      const symbols = Array(card.number).fill(symbol).join('  ');
+
+      let textStyle = {};
+      if (card.shading === 'solid') {
+        textStyle = { color, fontWeight: 'bold' };
+      } else if (card.shading === 'striped') {
+        textStyle = { color, textDecoration: 'underline', textDecorationThickness: '2px' };
+      } else if (card.shading === 'empty') {
+        textStyle = { color, WebkitTextStroke: '1px ' + color, WebkitTextFillColor: 'white' };
+      }
+
+      return (
+        <div
+          onClick={() => onClick(card.id)}
+          className="card"
+          style={{
+            border: isSelected ? '4px solid #3498db' : '2px solid #bdc3c7',
+            backgroundColor: isSelected ? '#ebf5fb' : 'white',
+          }}
+        >
+          <div style={{ ...textStyle, lineHeight: '1.2' }}>{symbols}</div>
+        </div>
+      );
+    }
+
+    // ===== BOARD COMPONENT =====
+    function Board({ cards, selectedCards, onSelectCard }) {
+      return (
+        <div className="board">
+          {cards.map((card) => (
+            <Card
+              key={card.id}
+              card={card}
+              isSelected={selectedCards.includes(card.id)}
+              onClick={onSelectCard}
+            />
+          ))}
+        </div>
+      );
+    }
+
+    // ===== SETCHECK COMPONENT =====
+    function SetCheck({ message, visible }) {
+      if (!visible) return null;
+
+      const isValid = message === 'Set found!';
+      
+      return (
+        <div
+          className="message-box"
+          style={{
+            fontSize: '1.5rem',
+            fontWeight: 'bold',
+            color: isValid ? '#2ecc71' : '#e74c3c',
+          }}
+        >
+          {message}
+        </div>
+      );
+    }
+
+    // ===== DECK COMPONENT =====
+    function Deck({ remaining, found }) {
+      return (
+        <div
+          style={{
+            display: 'flex',
+            gap: '3rem',
+            fontSize: '1.1rem',
+            color: 'white',
+          }}
+        >
+          <div>
+            Cards in deck: <strong>{remaining}</strong>
+          </div>
+          <div>
+            Found sets: <strong>{found}</strong>
+          </div>
+        </div>
+      );
+    }
+
+    // ===== UTILITY FUNCTIONS =====
+
+    function generateDeck() {
+      const shapes = ['diamond', 'squiggle', 'oval'];
+      const colors = ['red', 'green', 'purple'];
+      const numbers = [1, 2, 3];
+      const shadings = ['solid', 'striped', 'empty'];
+
+      let cardId = 0;
+      const deck = [];
+
+      for (let shape of shapes) {
+        for (let color of colors) {
+          for (let number of numbers) {
+            for (let shading of shadings) {
+              deck.push({
+                id: cardId++,
+                shape,
+                color,
+                number,
+                shading,
+              });
+            }
+          }
+        }
+      }
+
+      // Shuffle
+      for (let i = deck.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [deck[i], deck[j]] = [deck[j], deck[i]];
+      }
+
+      return deck;
+    }
+
+    function isValidSet(card1, card2, card3) {
+      const attributes = ['shape', 'color', 'number', 'shading'];
+
+      for (let attr of attributes) {
+        const v1 = card1[attr];
+        const v2 = card2[attr];
+        const v3 = card3[attr];
+
+        // All same
+        const allSame = v1 === v2 && v2 === v3;
+
+        // All different
+        const allDifferent = v1 !== v2 && v2 !== v3 && v1 !== v3;
+
+        // If neither all same nor all different → invalid
+        if (!allSame && !allDifferent) {
+          return false;
+        }
+      }
+
+      // All attributes passed the check
+      return true;
+    }
+
+    function hasSetOnBoard(cards) {
+      // Check all combinations of 3 cards
+      for (let i = 0; i < cards.length; i++) {
+        for (let j = i + 1; j < cards.length; j++) {
+          for (let k = j + 1; k < cards.length; k++) {
+            if (isValidSet(cards[i], cards[j], cards[k])) {
+              return true; // Found at least one set
+            }
+          }
+        }
+      }
+      return false; // No sets found
+    }
+
+    // ===== MAIN GAME COMPONENT =====
+    function Home() {
+      const [deck, setDeck] = useState([]);
+      const [board, setBoard] = useState([]);
+      const [selectedCards, setSelectedCards] = useState([]);
+      const [foundSets, setFoundSets] = useState(0);
+      const [message, setMessage] = useState('');
+      const [showMessage, setShowMessage] = useState(false);
+
+      // Initialize game on mount
+      useEffect(() => {
+        const newDeck = generateDeck();
+        const initialBoard = newDeck.slice(0, 12);
+        const remainingDeck = newDeck.slice(12);
+
+        setDeck(remainingDeck);
+        setBoard(initialBoard);
+      }, []);
+
+      // Auto-check when 3 cards are selected
+      useEffect(() => {
+        if (selectedCards.length === 3) {
+          const selected = selectedCards.map((id) =>
+            board.find((card) => card.id === id)
+          );
+
+          if (isValidSet(selected[0], selected[1], selected[2])) {
+            // Valid set found!
+            setMessage('Set found!');
+            setShowMessage(true);
+
+            // Remove selected cards from board and deal new ones
+            setTimeout(() => {
+              const newBoard = board.filter(
+                (card) => !selectedCards.includes(card.id)
+              );
+
+              // Deal 3 new cards from deck
+              if (deck.length > 0) {
+                const cardsToAdd = deck.slice(0, 3);
+                const newDeck = deck.slice(3);
+                setBoard([...newBoard, ...cardsToAdd]);
+                setDeck(newDeck);
+              } else {
+                setBoard(newBoard);
+              }
+
+              // Update score and clear selection
+              setFoundSets(foundSets + 1);
+              setSelectedCards([]);
+              setShowMessage(false);
+            }, 3000); // Wait for message animation
+          } else {
+            // Not a set
+            setMessage('Not a set');
+            setShowMessage(true);
+
+            // Auto-unselect after 1.5 seconds
+            setTimeout(() => {
+              setSelectedCards([]);
+              setShowMessage(false);
+            }, 1500);
+          }
+        }
+      }, [selectedCards, board, deck, foundSets]);
+
+      const handleSelectCard = (cardId) => {
+        if (selectedCards.includes(cardId)) {
+          setSelectedCards(selectedCards.filter((id) => id !== cardId));
+        } else if (selectedCards.length < 3) {
+          setSelectedCards([...selectedCards, cardId]);
+        }
+      };
+
+      const handleNoSet = () => {
+        if (hasSetOnBoard(board)) {
+          setMessage('there is at least one possible set');
+          setShowMessage(true);
+          setTimeout(() => {
+            setShowMessage(false);
+          }, 3000);
+        } else {
+          // No set on board - deal 3 more cards
+          if (deck.length >= 3) {
+            const cardsToAdd = deck.slice(0, 3);
+            const newDeck = deck.slice(3);
+            setBoard([...board, ...cardsToAdd]);
+            setDeck(newDeck);
+            setMessage('No sets found. Dealing 3 more cards.');
+            setShowMessage(true);
+            setTimeout(() => {
+              setShowMessage(false);
+            }, 2000);
+          } else if (deck.length > 0) {
+            // Fewer than 3 cards left, deal what we can
+            const cardsToAdd = deck.slice(0, deck.length);
+            setBoard([...board, ...cardsToAdd]);
+            setDeck([]);
+            setMessage(`No sets found. Dealt ${cardsToAdd.length} remaining cards.`);
+            setShowMessage(true);
+            setTimeout(() => {
+              setShowMessage(false);
+            }, 2000);
+          } else {
+            setMessage('No sets found. No cards left in deck.');
+            setShowMessage(true);
+            setTimeout(() => {
+              setShowMessage(false);
+            }, 2000);
+          }
+        }
+      };
+
+      return (
+        <div className="main-container">
+          {/* Left Sidebar */}
+          <div className="sidebar">
+            <h1 style={{ color: 'white', margin: 0, fontSize: '1.5rem' }}>
+              def not SET, just SET inspired.
+            </h1>
+
+            <Deck remaining={deck.length} found={foundSets} />
+
+            <div style={{ color: 'white', fontSize: '1rem' }}>
+              Selected: {selectedCards.length} / 3
+            </div>
+
+            <button
+              onClick={handleNoSet}
+              style={{
+                padding: '10px 20px',
+                fontSize: '1rem',
+                backgroundColor: '#463086',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                transition: 'background-color 0.2s ease',
+                width: '100%',
+              }}
+              onMouseOver={(e) => (e.target.style.backgroundColor = '#614d9e')}
+              onMouseOut={(e) => (e.target.style.backgroundColor = '#463086')}
+            >
+              No Set?
+            </button>
+
+            <SetCheck message={message} visible={showMessage} />
+          </div>
+
+          {/* Center Board */}
+          <div className="board-container">
+            <Board cards={board} selectedCards={selectedCards} onSelectCard={handleSelectCard} />
+          </div>
+
+          {/* Right Sidebar (empty for now) */}
+          <div className="sidebar" />
+        </div>
+      );
+    }
+
+    // ===== RENDER =====
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<Home />);
+  </script>
+</body>
+</html>
